@@ -1,0 +1,173 @@
+:root{
+    --normal: linear-gradient(to left bottom, #ec8200, #e97400, #e66500, #e35500, #df4400);
+    --active: linear-gradient(to left bottom, #8e2500, #a32b01, #b93101, #cf3701, #e63d01);
+    --disabled: linear-gradient(to left bottom, #4c2213, #5d2410, #6e250c, #7f2606, #912600);
+    --crystal-inset: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, rgba(10, 37, 64, 0.35) 0px -2px 6px 0px inset;
+    --bottom-lift: rgba(0, 0, 0, 0.09) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px;
+    --clean: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+    --hard-chocolate: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+    --card-black: #423F3E;
+    --lil-black: #2B2B2B;
+    -dark-black: #171010;
+    --board: #333333;
+    --standard-transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+
+body, html{
+    width: 100%;
+    height: 100%;
+    top: 0px; left: 0px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body{
+    margin: 0px;
+    padding: 0px;
+}
+
+nav{
+    background-image: linear-gradient(to left top, #312d2f, #302c2d, #2f2b2b, #2e2a29, #2c2928);
+    padding: 0px !important;
+    margin: 0px !important;
+    min-height: 45px;
+    justify-content: space-between !important;
+    box-shadow: var(--bottom-lift);
+    z-index: 1;
+}
+
+nav > a.navbar-brand{
+    margin: auto 0px;
+    font-size: 2rem;
+}
+
+header > section{
+    margin: auto 0;
+}
+
+#__loading_overlay{
+    position: absolute !important;
+
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-flow: column;
+    justify-content: stretch;
+    flex-grow: 1;
+}
+#main{
+    display: none;
+}
+
+.actual-body{
+    display: flex;
+    flex-flow: row;
+    flex-grow: 1;
+    justify-content: center;
+    background-image: linear-gradient(to right, #d65f05, #df6718, #e86e26, #f07632, #f97e3d);
+    align-items: center;
+    column-gap: 10%;
+    flex-wrap: wrap;
+}
+
+.tab-pane > div{
+    height: 100%;
+    display: flex;
+}
+
+.tab-pane > div > section{
+    flex-grow: 1;
+}
+
+
+.radio-group .btn-group > .form-check:not(:first-child) > .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: -1px;
+    box-shadow: var(--crystal-inset);
+}
+
+header > button{
+    margin: auto 0;
+}
+
+label.mantine-SegmentedControl-labelActive{
+    background-image: var(--normal);
+    color: whitesmoke;
+    transition: var(--standard-transition);
+}
+
+label.mantine-SegmentedControl-labelActive:hover, .custom-butt:hover{
+    color: wheat;
+    background-size: 100% 90px;
+    background-position: 0 45px;
+}
+
+.card{
+    background-color: var(--card-black);
+    color: #fff;
+    transition: var(--standard-transition);
+    box-shadow: var(--hard-chocolate);
+    border:1px solid rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+}
+
+.card:hover{
+    border:1px solid transparent;
+    filter: drop-shadow(4px 4px 4px rgb(61, 13, 0));
+    box-shadow: var(--clean);
+}
+
+.card > .card-footer, .card > .card-header{
+    background-color: var(--lil-black);
+    flex-grow: 1;
+    width: 100%;
+    box-shadow: var(--clean);
+    border: 3px solid var(--board);
+}
+
+div.mantine-Divider-label{
+    padding: 6px 0px;
+}
+
+
+.custom-butt{
+    background-image: var(--active);
+    color: white;
+    transition: var(--standard-transition);
+}
+
+.custom-butt:disabled{
+    background-image: var(--disabled);
+    cursor: not-allowed;
+}
+
+button.dropdown-item{
+    transition: var(--standard-transition);
+}
+
+button.dropdown-item:hover{
+    color: darkorange !important;
+}
+
+div.mantine-Modal-modal{
+    box-shadow: var(--hard-chocolate);
+}
+
+#__upload > div > label {
+    flex-grow: 1;
+    padding: 40px 0px;
+    box-sizing: content-box;
+    transition: var(--standard-transition);
+    border: 1px solid black;
+}
+
+#__upload > div > label:hover {
+    box-shadow: var(--bottom-lift);
+    border: 1px solid transparent;
+}

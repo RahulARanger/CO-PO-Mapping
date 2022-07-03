@@ -1,0 +1,21 @@
+*.docx
+*.jpg
+*.pyc
+.idea
+.vscode
+*.xlsx
+*.pdf
+*.pptx
+*.m
+*.p
+*.fig
+Project Related / *
+Python/*
+*.svg
+*.exe
+*.pfx
+get_cert.ps1
+test*.py
+CO_PO/assets/bootstrap.min.css
+*.ipynb
+*temp
