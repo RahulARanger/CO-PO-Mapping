@@ -85,8 +85,7 @@ function Get-Update{
 switch($mode){
     # for running the application
     0{
-
-        Show-Failed;
+        Show-Matlab;
         Start-Process $executable -WindowStyle Maximized -WorkingDirectory $ScriptPath -ArgumentList ('"' + (Join-Path -Path $CoPo -ChildPath "main.py") + '" ')
     }
 

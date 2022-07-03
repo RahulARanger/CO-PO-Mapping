@@ -18,10 +18,23 @@ from _thread import interrupt_main
 import socket
 import logging
 import webbrowser
+from waitress import serve
+import subprocess
+from CO_PO import __version__
 
 
 class CoreApplication:
+    def handle_settings(self, save=None):
+        if not save:
+            return json.loads(self.settings_path.read_text())
+
+        self.settings.update(save)
+        self.settings_path.write_text(json.dumps(self.settings))
+        return self.settings
+
     def __init__(self):
+        self.settings_path = pathlib.Path(__file__).parent / "settings.json"
+        self.settings = self.handle_settings()
         # All Constants
         # Samples
 
@@ -30,6 +43,9 @@ class CoreApplication:
         self._sample_input_dropdown = "__dropdown_sample_input"
         self._sample_output_dropdown = "__dropdown_sample_output"
         self._download_feed = "__download_feed"
+
+        # -> Slider
+        self.auto_update = "auto_update"
 
         # -> Loading Overlay
         self.loading_overlay = "__loading_overlay"
@@ -46,7 +62,7 @@ class CoreApplication:
 
         # -> Notifications
         self.for_file_upload = "__for_file_upload"
-        self.for_process = "__for_process"
+        self.for_shutdown = "__for_shutdown"
 
         # -> Modals
         self._modal_for_shutdown = "__modal_for_shutdown"
@@ -66,7 +82,7 @@ class CoreApplication:
         self.exams = "__exams"
 
         # -> Repo URL
-        self.repo = ""
+        self.repo = "https://github.com/RahulARanger/CO-PO-Mapping"
 
         # -> Output
         self.result_for_process = "result_memory"
@@ -86,14 +102,16 @@ class CoreApplication:
     def set_callbacks(self):
         self.app.callback(
             Output(self._modal_for_shutdown, "opened"),
+            Output(self.for_shutdown, "children"),
             [
                 Input(self._shutdown, "n_clicks"),
-                Input(self._shutdown_close, "n_clicks")
+                Input(self._shutdown_close, "n_clicks"),
+                Input(self.confirm_shutdown, "n_clicks")
             ],
             [
                 State(self._modal_for_shutdown, "opened")
             ]
-        )(lambda _, __, opened: False if not (_ or __) else not opened)
+        )(self._shutdown_this)
 
         self.app.callback(
             [
@@ -126,6 +144,11 @@ class CoreApplication:
             ],
             State(self.result_for_process, "data")
         )(self._download_feeder)
+
+        self.app.callback(
+            Output(self.auto_update, "title"),
+            Input(self.auto_update, "checked")
+        )(self._set_settings)
 
     def configure_upload(self):
         self.temp.mkdir(exist_ok=True)
@@ -196,11 +219,13 @@ class CoreApplication:
                     onLabel="Yes",
                     offLabel="No",
                     color="orange",
-                    size="md"
+                    size="md",
+                    id=self.auto_update,
+                    checked=self.settings[self.auto_update]
                 )
             ],
             brand="CO-PO Mapping",
-            brand_href="https://github.com/Tangellapalli-Srinivas/CO-PO-Mapping",
+            brand_href=self.repo,
             light=False,
             dark=True
         )
@@ -247,7 +272,7 @@ class CoreApplication:
                     html.Div(
                         id=_
                     )
-                    for _ in (self.for_file_upload, self.for_process)
+                    for _ in (self.for_file_upload, self.for_shutdown)
                 )
             ],
             zIndex=2,
@@ -261,7 +286,7 @@ class CoreApplication:
                 title="Want to Shutdown ?",
                 id=self._modal_for_shutdown,
                 children=[
-                    dmc.Text("Closing Engine may stop all the running tasks!"),
+                    dmc.Text("Closing this Application may stop all the running tasks!"),
                     dmc.Space(h=20),
                     dmc.Group(
                         [
@@ -295,14 +320,34 @@ class CoreApplication:
                     ),
                     dmc.Space(h=20),
                     dmc.Alert(
-                        "Submitting now, will start a process where your results are processed",
+                        dmc.List(
+                            [
+                                dmc.ListItem(
+                                    "Clicking on Submit Button, will start a new process. Mostly it will consume around"
+                                    " 20-60 seconds in order to process your input. Please wait until then."
+                                ),
+                                dmc.ListItem(
+                                    "Click on Cancel Button to close this modal. "
+                                    "If you have started a process, Process will also be terminate as requested.",
+                                ),
+                                dmc.ListItem(
+                                    "By Submitting, this form. You will be replacing the data if present on previous "
+                                    "request. to avoid this, please create a new process or open this url of this tab "
+                                    "in new tab",
+                                ),
+                                dmc.ListItem(
+                                    [
+                                        "After Submitting, Make Sure to wait for this window,"
+                                        " Which has the plotted result",
+                                        dmc.Image(
+                                            src="assets/Sample Output Image.jpg"
+                                        )
+                                    ]
+                                )
+                            ],
+                            type="ordered"
+                        ),
                         title="Note", color="violet", variant="filled"
-                    ),
-                    dmc.Space(h=10),
-                    dmc.Alert(
-                        "Closing now, will delete the file uploaded."
-                        " And if the process is started it will also be cancelled",
-                        title="Note", color="red", variant="filled"
                     ),
                     dmc.Space(h=20),
                     dmc.Group(
@@ -434,6 +479,32 @@ class CoreApplication:
         Timer(6000, lambda p=path: pathlib.Path(p).unlink() if pathlib.Path(p.exists()) else None).start()
         return dcc.send_file(path, filename=name + ".txt")
 
+    def _shutdown_this(self, _, __, ___, opened):
+        if not any((_, __, ___)):
+            return False, no_update
+
+        so = not opened
+
+        if ctx.triggered_id != self.confirm_shutdown:
+            return so, no_update
+
+        close_main_thread_in_good_way()
+        return so, show_notifications(
+            "Server was closed",
+            "You can close this tab and any other tabs that was open with this url.",
+            color="orange"
+        )
+
+    def _set_settings(self, auto_update):
+        if auto_update is None:
+            return no_update
+
+        self.handle_settings({
+            self.auto_update: bool(auto_update)
+        })
+
+        return no_update
+
 
 def set_timestamp(title):
     return title, dmc.Text(time_format(), size="xs")
@@ -530,7 +601,7 @@ Results from STDERR:
 
 def close_main_thread_in_good_way(wait=0.9):
     logging.warning("Shutting down....")
-    return Timer(wait, lambda: interrupt_main()).start()
+    Timer(wait, lambda: interrupt_main()).start()
 
 
 def open_local_url(port_, wait=1, postfix=""):
@@ -550,4 +621,14 @@ def get_free_port():
 if __name__ == "__main__":
     port = get_free_port()
     open_local_url(port)
-    core.app.run_server(port=port, debug=True, host="localhost")
+    serve(core.app.server, port=port, host="localhost")
+
+    subprocess.Popen(
+        ["setup", "-mode", "2", "-arguments", __version__],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
+        cwd=pathlib.Path(__file__).parent.parent,
+        start_new_session=True
+    ) if core.handle_settings()[core.auto_update] else ...
+

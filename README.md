@@ -1,14 +1,14 @@
+# Table of Contents
 
-- [CO-PO Mapping](#co-po-mapping)
-- [Introduction](#introduction)
-- [How to Use](#how-to-use)
+- [Table of Contents](#table-of-contents)
+  - [CO-PO Mapping](#co-po-mapping)
+  - [Introduction](#introduction)
+  - [How to Use](#how-to-use)
 
 
 ## CO-PO Mapping
 
 Flexible computational tool for the Outcome based Education
-
----
 
 ## Introduction
 
