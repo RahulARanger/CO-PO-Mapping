@@ -624,11 +624,11 @@ if __name__ == "__main__":
     serve(core.app.server, port=port, host="localhost")
 
     subprocess.Popen(
-        [str(core.settings_path.parent.parent / "setup.cmd"), "-mode", "2", "-arguments", __version__],
+        ["setup", "-mode", "2", "-arguments", __version__],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=True,
-        cwd=pathlib.Path(__file__).parent.parent,
+        cwd=core.settings_path.parent.parent,
         start_new_session=True
     ) if core.handle_settings()[core.auto_update] else ...
 
