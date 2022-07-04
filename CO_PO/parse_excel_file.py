@@ -9,6 +9,7 @@ from openpyxl.workbook import Workbook
 from openpyxl.worksheet.table import Table
 from openpyxl.utils.cell import coordinate_to_tuple
 import io
+from threading import Lock
 
 
 def starting_table_number(table: Table):
@@ -31,8 +32,8 @@ def parse_tables(tables_to_consider: int, workbook: Workbook, *sheets: typing.Li
 
         if len(_tables) < tables_to_consider:
             raise ValueError(
-                f"Sheet: {SHEET} has less than {tables_to_consider} tables, Remember"
-                f"first {tables_to_consider} tables are considered\nPlease refer Excel Input Format in 'How To' Tab "
+                f"Uploaded Workbook contains Sheet: `{SHEET}` which has less than {tables_to_consider} tables."
+                f"It is important to arrange the tables in a sheet. Please know more about this in the docs."
             )
 
         for table in _tables[:tables_to_consider]:
@@ -46,9 +47,21 @@ def parse_tables(tables_to_consider: int, workbook: Workbook, *sheets: typing.Li
 class Engine:
     def __init__(self):
         super().__init__()
-        self.matlab_engine = matlab.engine.start_matlab()
-        self.matlab_engine.cd(str(pathlib.Path(__file__).parent / "Scripts"))
+        self.matlab_engine = None
+        self.loading = Lock()
+        self.processing = Lock()
         self.raw = []
+
+    def load(self):
+        print("loading engine")
+        with self.loading:
+            if self.matlab_engine:
+                return ...
+
+            self.matlab_engine = matlab.engine.start_matlab()
+            self.matlab_engine.cd(str(pathlib.Path(__file__).parent / "Scripts"))
+            print("loaded")
+        return ...
 
     def stop_engine(self):
         self.matlab_engine.quit() if self.matlab_engine else ...
@@ -64,8 +77,9 @@ class Engine:
 
         if len(workbook.sheetnames) < (exams + 1):
             raise ValueError(
-                "There are not enough sheets in the workbook\nWe need X + 1 sheets, where X = Number of Exams\nRefer "
-                "Sample Input from the 'How To' Tab "
+                f"Uploaded Workbook has following sheets: {workbook.sheetnames}, "
+                f"which is of length: {len(workbook.sheetnames)} it is required to be at least {exams + 1}. "
+                f"Please refer the documentation in the Repo. or look for Help in Application"
             )
 
         sheets = workbook.sheetnames[-(exams + 1):]
@@ -93,4 +107,9 @@ class Engine:
 
         return output.read(), error.read()
 
+    def parse(self, *args):
+        if self.processing.locked():
+            return False, False
 
+        with self.processing:
+            return self.actual_parse(*args)

@@ -161,7 +161,7 @@ div.mantine-Modal-modal{
 
 #__upload > div > label {
     flex-grow: 1;
-    padding: 40px 0px;
+    padding: 35px 2px;
     box-sizing: content-box;
     transition: var(--standard-transition);
     border: 1px solid black;
@@ -170,4 +170,9 @@ div.mantine-Modal-modal{
 #__upload > div > label:hover {
     box-shadow: var(--bottom-lift);
     border: 1px solid transparent;
+}
+
+button.mantine-ActionIcon-root{
+    box-shadow: var(--bottom-lift);
+    background-color: var(--card-black);
 }

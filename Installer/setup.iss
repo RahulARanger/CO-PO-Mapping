@@ -1,4 +1,4 @@
-#define Version="0.2.1"
+#define Version="0.3.0"
 #define Name="CO-PO Mapping"
 #define Author="Tangellapalli Srinivas"
 #define Mx="CO-PO"
@@ -86,13 +86,19 @@ SignTool=SignThis
 [Files]
 Source: "{tmp}\python.zip"; DestDir: "{app}"; flags: external skipifsourcedoesntexist; Permissions: users-modify;
 Source: "{tmp}\get-pip.py"; DestDir: "{app}"; flags: external skipifsourcedoesntexist; Permissions: users-modify;
+
 Source: "../CO_PO\assets\*"; DestDir: "{app}/CO_PO/assets";
 Source: "{tmp}\bootstrap.min.css"; DestDir: "{app}/CO_PO/assets"; flags: dontcopy external; Permissions: users-modify;
+
 Source: "./setup.ps1"; DestDir: "{app}"; Permissions: users-modify; Flags: deleteafterinstall;
 Source: "{app}/python/pythonw.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist deleteafterinstall;
+
 Source: "../gate.ps1"; DestDir: "{app}";
 Source: "../setup.cmd"; DestDir: "{app}"; 
+
 Source: "../CO_PO/scripts/*"; DestDir: "{app}/CO_PO/scripts";
+Source: "../CO_PO/docs/*"; DestDir: "{app}/CO_PO/docs/";
+
 Source: "../requirements.txt"; DestDir: "{app}"; Permissions: users-modify; AfterInstall: PostInstall
 
 Source: "../CO_PO\*"; DestDir: "{app}/CO_PO";

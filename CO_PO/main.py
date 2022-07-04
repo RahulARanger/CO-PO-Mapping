@@ -1,14 +1,13 @@
 import json
 import os
-from threading import Timer
+import threading
+import traceback
 import dash_uploader as du
 import pathlib
 import string
 import datetime
 import random
-import diskcache
 from dash import Dash, html, Input, Output, ctx, no_update, State, dcc
-from dash.long_callback import DiskcacheLongCallbackManager
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import typing
@@ -21,6 +20,10 @@ import webbrowser
 from waitress import serve
 import subprocess
 from CO_PO import __version__
+
+logging.basicConfig(
+    level=logging.INFO
+)
 
 
 class CoreApplication:
@@ -35,6 +38,7 @@ class CoreApplication:
     def __init__(self):
         self.settings_path = pathlib.Path(__file__).parent / "settings.json"
         self.settings = self.handle_settings()
+        self.docs = self.settings_path.parent / "docs"
         # All Constants
         # Samples
 
@@ -59,12 +63,10 @@ class CoreApplication:
         # --> Upload Button Constant
         self.upload_button = "__upload"
 
-        # -> Card Header
-        self.upload_header = "__upload_header"
-
         # -> Notifications
         self.for_file_upload = "__for_file_upload"
         self.for_shutdown = "__for_shutdown"
+        self.for_process = "__for_process"
 
         # -> Modals
         self._modal_for_shutdown = "__modal_for_shutdown"
@@ -73,15 +75,15 @@ class CoreApplication:
         self._shutdown_close = "__close_modal"
         self.confirm_shutdown = self._shutdown + "confirm"
         self.confirm_process = "confirm_process"
-        self.cancel_final_step = "__cancel_upload"
-
-        self.alert_for_start = "alert_for_start"
 
         # -> DropDownMenu
         self._result = "__result"
 
         # -> Input
         self.exams = "__exams"
+        self.uploaded = "__uploaded"
+
+        self._check_input = "__check_input"
 
         # -> Repo URL
         self.repo = "https://github.com/RahulARanger/CO-PO-Mapping"
@@ -91,13 +93,21 @@ class CoreApplication:
 
         self.temp = pathlib.Path(__file__).parent / "temp"
 
-        self.__cache_disk = diskcache.Cache(str(self.temp))
-        self.manager = DiskcacheLongCallbackManager(self.__cache_disk)
+        # Help Components
+        self._help_for_input = "help_input"
 
-        self.app = Dash(__name__, long_callback_manager=self.manager)
+        self.app = Dash(__name__)
+        self.engine = Engine()
+
         self.set_layout()
         self.set_callbacks()
         self.configure_upload()
+
+        if not self.engine.loading.locked():
+            threading.Thread(
+                target=self.engine.load,
+                name="Loading Engine"
+            ).start()
 
     def set_callbacks(self):
         self.app.callback(
@@ -115,25 +125,33 @@ class CoreApplication:
 
         self.app.callback(
             [
-                Output(self.final_step, "opened"),
+                Output(self.uploaded, "value"),
                 Output(self.for_file_upload, "children")
             ],
             [
-                Input(self.upload_header, "title"),
-                Input(self.cancel_final_step, "n_clicks")
+                Input(self.uploaded, "placeholder")
             ],
-            State(self.final_step, "opened")
-        )(self._handle_final_step)
+            [
+                State(self.uploaded, "value")
+            ]
+        )(set_file_path)
 
         self.app.callback(
-            Output(self.exams, "value"),
-            Input(self.final_step, "opened")
-        )(lambda _: None)  # FIXME: without this long_callback was called again
-
-        self.app.callback(
-            Output(self.alert_for_start, "children"),
-            Input(self.result_for_process, "data")
-        )(self._process_results)
+            [
+                Output(self.for_process, "children"),
+                Output(self.result_for_process, "data")
+            ],
+            [
+                Input(self.confirm_process, "n_clicks"),
+                Input(self._check_input, "n_clicks")
+            ],
+            [
+                State(self.uploaded, "value"),
+                State(self.exams, "value")
+            ]
+        )(
+            self._process_input
+        )
 
         self.app.callback(
             Output(self._download_feed, "data"),
@@ -146,16 +164,24 @@ class CoreApplication:
         )(self._download_feeder)
 
         self.app.callback(
-            Output(self.auto_update, "title"),
+            Output(self.auto_update, "id"),
             Input(self.auto_update, "checked")
         )(self._set_settings)
+
+        self.app.callback(
+            Output(self.final_step, "opened"),
+            Input(self._help_for_input, "n_clicks"),
+            State(self.final_step, "opened")
+        )(
+            lambda _, opened: not opened if _ else no_update
+        )
 
     def configure_upload(self):
         self.temp.mkdir(exist_ok=True)
         du.configure_upload(self.app, str(self.temp))
 
     def set_layout(self):
-        self.app.layout = dmc.MantineProvider(html.Article(
+        self.app.layout = dmc.MantineProvider(dmc.LoadingOverlay(
             [
                 self._header(),
                 self.body(),
@@ -164,7 +190,7 @@ class CoreApplication:
                 dcc.Store(id=self.result_for_process),
                 dcc.Download(id=self._download_feed)
             ],
-            id=self.loading_overlay
+            id=self.loading_overlay,
         ), theme={"colorScheme": "dark"})
 
     def _header(self):
@@ -198,21 +224,21 @@ class CoreApplication:
                 dbc.DropdownMenu(
                     [
                         dbc.DropdownMenuItem(
-                            "Results ⭐", header=True
+                            "Engine ⚙", header=True
                         ),
                         dbc.DropdownMenuItem(
-                            "Fetch Results", n_clicks=0, id=self._result
+                            "Check Status", n_clicks=0, id=self._check_input
                         ),
                         dbc.DropdownMenuItem(
                             "Shutdown", n_clicks=0, id=self._shutdown
-                        ),
+                        )
                     ],
                     menu_variant="dark",
                     nav=True,
                     in_navbar=True,
                     color="info",
                     align_end=True,
-                    label="Results ⭐"
+                    label="Engine ⚙"
                 ),
                 dmc.Switch(
                     label="Auto Check Updates",
@@ -236,7 +262,7 @@ class CoreApplication:
                 dbc.Card(
                     [
                         dbc.CardHeader(
-                            html.Label("Upload the Data File", id=self.upload_header),
+                            "Upload the Data File"
                         ),
                         dbc.CardBody(
                             [
@@ -254,11 +280,47 @@ class CoreApplication:
                                         highlight=[".xlsx", "allowed"],
                                         highlightColor="orange", size="xs", align="right"
                                     )
+                                ),
+                                dmc.Space(h=10),
+                                dmc.TextInput(label="Uploaded File", required=True, disabled=True, id=self.uploaded),
+                                dmc.Space(h=10),
+                                dmc.NumberInput(
+                                    label="No. of Exams",
+                                    description="Enter the Number of Exams conducted",
+                                    required=True,
+                                    min=1,
+                                    max=100,
+                                    id=self.exams
+                                ),
+                                dmc.ActionIcon(
+                                    dmc.Image(src="/assets/help.svg", alt="Get Help"),
+                                    class_name="position-absolute top-0 start-100 translate-middle",
+                                    id=self._help_for_input
                                 )
                             ],
                             style={
                                 "width": "100%"
                             }
+                        ),
+                        dbc.CardFooter(
+                            [
+                                dmc.Button(
+                                    "Process",
+                                    class_name="custom-butt",
+                                    style={
+                                        "float": "right"
+                                    },
+                                    id=self.confirm_process
+                                ),
+                                dmc.Button(
+                                    "Results ⭐",
+                                    class_name="custom-butt",
+                                    style={
+                                        "float": "left"
+                                    },
+                                    id=self._result
+                                )
+                            ]
                         )
                     ]
                 )
@@ -272,7 +334,7 @@ class CoreApplication:
                     html.Div(
                         id=_
                     )
-                    for _ in (self.for_file_upload, self.for_shutdown)
+                    for _ in (self.for_file_upload, self.for_shutdown, self.for_process)
                 )
             ],
             zIndex=2,
@@ -303,160 +365,14 @@ class CoreApplication:
                 ],
             ),
             dmc.Modal(
-                title="Uploaded",
+                title="Help for Upload",
                 centered=True,
-                closeOnClickOutside=False,
-                withCloseButton=False,
-                closeOnEscape=False,
                 id=self.final_step,
-                children=[
-                    dmc.NumberInput(
-                        label="No. of Exams",
-                        description="Enter the Number of Exams conducted",
-                        required=True,
-                        min=1,
-                        max=100,
-                        id=self.exams
-                    ),
-                    dmc.Space(h=20),
-                    dmc.Alert(
-                        dmc.List(
-                            [
-                                dmc.ListItem(
-                                    "Clicking on Submit Button, will start a new process. Mostly it will consume around"
-                                    " 20-60 seconds in order to process your input. Please wait until then."
-                                ),
-                                dmc.ListItem(
-                                    "Click on Cancel Button to close this modal. "
-                                    "If you have started a process, Process will also be terminate as requested.",
-                                ),
-                                dmc.ListItem(
-                                    "By Submitting, this form. You will be replacing the data if present on previous "
-                                    "request. to avoid this, please create a new process or open this url of this tab "
-                                    "in new tab",
-                                ),
-                                dmc.ListItem(
-                                    [
-                                        "After Submitting, Make Sure to wait for this window,"
-                                        " Which has the plotted result",
-                                        dmc.Image(
-                                            src="/assets/Sample Output Image.jpg"
-                                        )
-                                    ]
-                                )
-                            ],
-                            type="ordered"
-                        ),
-                        title="Note", color="violet", variant="filled"
-                    ),
-                    dmc.Space(h=20),
-                    dmc.Group(
-                        [
-                            dmc.Button(
-                                "Submit",
-                                class_name="custom-butt",
-                                id=self.confirm_process
-                            ),
-                            dmc.Button(
-                                "Close",
-                                color="red",
-                                variant="outline",
-                                id=self.cancel_final_step
-                            )
-                        ],
-                        position="right"
-                    ),
-                    dmc.Space(h=20),
-                    html.Section(
-                        id=self.alert_for_start
-                    )
-                ]
+                children=dcc.Markdown(
+                    (self.docs / "input.md").read_text()
+                )
             )
         ], id="modals")
-
-    def _handle_final_step(self, title, _, opened):
-        if not title:
-            return no_update, no_update
-
-        if ctx.triggered_id == self.cancel_final_step:
-            note = pathlib.Path(title)
-            note.unlink() if note.exists() else ...
-            parent = note.parent
-
-            if parent.exists() and not list(parent.iterdir()):
-                parent.rmdir()
-
-            return False, show_notifications(
-                "Cancelled Final Step",
-                "File was deleted, if the process was started, is cancelled.",
-                color="orange",
-                auto_close=6000
-            )
-
-        return not opened, no_update
-
-    def _process_results(self, raw):
-        loaded = json.loads(raw)
-
-        result_type = loaded.get("type", 0)
-
-        if result_type == 4:
-            return dmc.Alert(
-                "Regarding your recent process, You can view the results in the NavBar",
-                title="Results ⭐",
-                color="orange",
-                duration=6900,
-                variant="outline"
-            )
-
-        elif result_type == 1:
-            return dmc.Alert(
-                "Please Enter the Number of Exams Conducted",
-                title=set_timestamp("Missing Number of Exams"),
-                duration=4000,
-                color="red",
-                variant="outline"
-            )
-
-        elif result_type == 2:
-            return dmc.Alert(
-                dmc.Text([
-                    "It seems we are missing the file that was uploaded before."
-                    "This could be due to 2 reasons:",
-                    dmc.List([
-                        dmc.ListItem(
-                            "After Processing, File will be deleted as the last step (in order to delete unused files)"
-                        ),
-                        dmc.ListItem(
-                            [
-                                "Maybe file was not uploaded onto server, if this issue persists,"
-                                " Please raise the issue in the ", html.A("Repo.", href=self.repo)
-                            ]
-                        )
-                    ], type="ordered"),
-                ]),
-                title=set_timestamp("File Not Found"),
-                withCloseButton=True,
-                color="red",
-                variant="outline"
-            )
-
-        elif result_type == 3:
-            return dmc.Alert(
-                "Please Download the raw file from the NavBar in Home page",
-                title=set_timestamp("Error in Processing the request"),
-                withCloseButton=True,
-                color="red",
-                variant="outline"
-            )
-
-        return dmc.Alert(
-            "Invalid Response, Please try uploading file again!, if this issue persists, please raise an issue",
-            title=set_timestamp("Rare Issue found 😲"),
-            color="red",
-            withCloseButton=True,
-            variant="outline"
-        )
 
     def _download_feeder(self, _, __, ___, data):
         if not any((_, __, ___)):
@@ -473,10 +389,11 @@ class CoreApplication:
         handler, path = tempfile.mkstemp(suffix=".txt")
         os.close(handler)
 
-        name = "Results" if raw.get("type", 3) == 4 else "Error"
+        name = "Error" if raw.get("is_error", True) else "Results"
         pathlib.Path(path).write_text(raw.get("results", ""))
 
-        Timer(6000, lambda p=path: pathlib.Path(p).unlink() if pathlib.Path(p.exists()) else None).start()
+        threading.Timer(6000, lambda p=path: pathlib.Path(p).unlink() if pathlib.Path(p.exists()) else None).start()
+
         return dcc.send_file(path, filename=name + ".txt")
 
     def _shutdown_this(self, _, __, ___, opened):
@@ -488,6 +405,7 @@ class CoreApplication:
         if ctx.triggered_id != self.confirm_shutdown:
             return so, no_update
 
+        self.engine.stop_engine()
         close_main_thread_in_good_way()
         return so, show_notifications(
             "Server was closed",
@@ -504,6 +422,124 @@ class CoreApplication:
         })
 
         return no_update
+
+    def _process_input(self, _, __, file_path, exams):
+        if not (_ or __):
+            return no_update, no_update
+
+        if ctx.triggered_id == self._check_input:
+            if self.engine.loading.locked():
+                note = "Engine is currently loading"
+            elif self.engine.processing.locked():
+                note = "Engine is currently processing"
+            else:
+                note = "Engine is free for future use"
+
+            return show_notifications(
+                "Engine status",
+                note,
+                auto_close=6000,
+                color="pink"
+            ), no_update
+
+        uploaded = pathlib.Path(file_path) if file_path else None
+
+        if not (uploaded and uploaded.exists()):
+            return show_notifications(
+                "File not uploaded",
+                "Please try again after uploading a file."
+            ), no_update
+
+        if not exams:
+            return show_notifications(
+                "Invalid value for exams",
+                "Please provide valid number for number of examinations"
+            ), no_update
+
+        if self.engine.processing.locked():
+            return show_notifications(
+                "Please try again later!",
+                "Engine is already processing previous request. ",
+                dmc.Code("Please start a new process or wait for results."),
+                color="red"
+            ), no_update
+
+        self.engine.load()
+
+        try:
+
+            results = self.engine.parse(uploaded, exams)
+            is_error = bool(results[-1])
+
+        except ValueError as error:
+            return show_notifications(
+                "Wrong Input",
+                dmc.Text(
+                    [
+                        "It seems Input was not correct, Please refer to this ",
+                        html.A("docs", href=self.repo, target="_blank"),
+                        ". Meanwhile please download the results to get more idea on error"
+                    ],
+                )
+            ), json.dumps({
+                "is_error": True,
+                "results": str(error),
+            })
+
+        except Exception as error:
+            # RARE CASES
+            is_error = True
+            results = str(error), traceback.format_exc()
+
+        if is_error:
+            note = show_notifications(
+                "Failed to Process your request",
+                "Please refer the Results button to download the results"
+            )
+        else:
+            note = show_notifications(
+                "Results are generated successfully",
+                "Please refer the Results button to download the results",
+                color="green",
+                auto_close=4000
+            )
+
+        return note, json.dumps({
+            "is_error": is_error,
+            "results": output_format(*results) if is_error else results[0],
+        })
+
+
+def set_file_path(new_path, old_path):
+    if not new_path or new_path == old_path:
+        return no_update
+
+    old = pathlib.Path(old_path) if old_path else None
+
+    if old and old.exists():
+        note = show_notifications(
+            "File uploaded Successfully",
+            "Replaced old Uploaded File with new one, by Clicking on \"Process\", Old results will be replaced",
+            auto_close=6000,
+            color="orange"
+        )
+
+        old.unlink()
+        p = old.parent
+
+        if not list(p.iterdir()):
+            p.rmdir()
+
+    else:
+        note = show_notifications(
+            "File Uploaded Successfully",
+            "You can use this file for processing. ",
+            dmc.Code("Note: only checked for extension .xlsx. not its internal contents"),
+            color="green",
+            auto_close=3000
+        )
+
+    return new_path, note
 
 
 def set_timestamp(title):
@@ -530,7 +566,7 @@ core = CoreApplication()
 
 
 @du.callback(
-    output=Output(core.upload_header, "title"),
+    output=Output(core.uploaded, "placeholder"),
     id=core.upload_button
 )
 def upload_status(status):
@@ -539,74 +575,14 @@ def upload_status(status):
     return status[0]
 
 
-@core.app.long_callback(
-    output=Output(
-        core.result_for_process, "data"
-    ),
-    inputs=[
-        Input(core.confirm_process, "n_clicks")
-    ],
-    state=[
-        State(core.exams, "value"),
-        State(core.upload_header, "title")
-    ],
-    running=[
-        (Output(core.confirm_process, "disabled"), True, False),
-        (Output(core.confirm_process, "children"), "Processing...", "Process")
-    ],
-    cancel=[Input(core.cancel_final_step, "n_clicks")],
-    prevent_initial_call=False
-)
-def process_input(_, exams, path):
-    print("called", _, exams, path)
-
-    if not _:
-        return no_update
-
-    if not exams:
-        return json.dumps({"type": 1})
-
-    uploaded = pathlib.Path(path)
-
-    if not uploaded.exists():
-        return json.dumps({"type": 2})
-
-    try:
-        parser = Engine()
-        results = parser.actual_parse(uploaded, exams)
-    except Exception as error:
-        results = "", error
-
-    r_type = 4
-
-    if results[-1]:
-        r_type = 3
-        results = f"""
-Results from STDOUT:
---------------------
-
-{results[0]}
-
-Results from STDERR:
---------------------
-
-{results[-1]}
-"""
-
-    else:
-        results = results[0]
-
-    return json.dumps({"type": r_type, "results": results})
-
-
 def close_main_thread_in_good_way(wait=0.9):
     logging.warning("Shutting down....")
-    Timer(wait, lambda: interrupt_main()).start()
+    threading.Timer(wait, lambda: interrupt_main()).start()
 
 
 def open_local_url(port_, wait=1, postfix=""):
     logging.info("Requested to open %s", f"http://localhost:{port_}/" + postfix)
-    return Timer(wait, lambda: webbrowser.open(f"http://localhost:{port_}/" + postfix)).start()
+    return threading.Timer(wait, lambda: webbrowser.open(f"http://localhost:{port_}/" + postfix)).start()
 
 
 def get_free_port():
@@ -618,17 +594,41 @@ def get_free_port():
         return port_
 
 
+def output_format(stderr="", stdout=""):
+    return f"""
+STDERR [From Error PIPE]
+------------------------
+{stderr}
+
+STDOUT [From Output PIPE]
+------------------------
+{stdout}
+"""
+
+
+def shell_exc(mode, *args):
+    arg_s = ["setup", "-mode", mode]
+
+    if args:
+        arg_s.extend(["-arguments", *args])
+
+        return subprocess.Popen(
+            arg_s,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            cwd=core.settings_path.parent.parent,
+            start_new_session=True
+        )
+
+
 if __name__ == "__main__":
     port = get_free_port()
     open_local_url(port)
     serve(core.app.server, port=port, host="localhost")
 
-    subprocess.Popen(
-        ["setup", "-mode", "2", "-arguments", __version__],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True,
-        cwd=core.settings_path.parent.parent,
-        start_new_session=True
-    ) if core.handle_settings()[core.auto_update] else ...
+    shell_exc("3")  # to clear cache, if no applications are running
+    shell_exc("2", __version__) if core.handle_settings()[core.auto_update] else ...
 
+# if __name__ == "__main__":
+#     core.app.run_server(debug=True)

@@ -122,5 +122,5 @@ end;
 function IsFresh: Boolean;
 // will not ask for Run Script after Setup was successfull if the setup was for update
 begin
-  Result := Downloaded;
+  Result := not Downloaded;
 end;

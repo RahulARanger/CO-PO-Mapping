@@ -3,7 +3,6 @@
 - [Table of Contents](#table-of-contents)
   - [CO-PO Mapping](#co-po-mapping)
   - [Introduction](#introduction)
-  - [How to Use](#how-to-use)
 
 
 ## CO-PO Mapping
@@ -29,5 +28,3 @@ But the mapping process for CO attainment is complex in nature, and it needs mor
 * It saves the faculty burden and allows quick decisions on the quality improvement process.
 
 * The procedure is generalised with the number of exams, number of COs, multiple COs tagged to a single question, number of PSOs, number of questions and weightage in marks.
-
-## How to Use

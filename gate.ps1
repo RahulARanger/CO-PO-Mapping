@@ -103,6 +103,23 @@ switch($mode){
         Write-Debug "Checking for the updates...";
         Get-Update
     }
+
+    3{
+        Start-Sleep -Seconds 6;
+        # Since this scripts are started by python, it's very likely that it will be executed by them
+
+        $store = @(Get-RunningProjects);
+        Write-Debug "Deleting Temp folder";
+
+        if($store.length -eq 0){
+            $temp = Join-Path -Path $CoPo -ChildPath "temp"
+
+            if(Test-Path -Path $temp){
+                Remove-Item -Recurse -Force -Path $temp;
+            }
+            
+        }
+    }
 }
 
 $DebugPreference = 'SilentlyContinue'
