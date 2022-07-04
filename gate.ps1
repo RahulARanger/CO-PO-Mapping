@@ -63,7 +63,7 @@ function Show-Matlab{
 
 function Get-Update{
         
-    $response = Invoke-RestMethod -Uri "https://api.github.com/repos/Tangellapalli-Srinivas/CO-PO-Mapping/releases/latest" -Method "GET"
+    $response = Invoke-RestMethod -Uri "https://api.github.com/repos/RahulARanger/CO-PO-Mapping/releases/latest" -Method "GET"
     $update_it = $response.tag_name -ne $arguments[0]
     if (-not $update_it){
         return
@@ -102,25 +102,6 @@ switch($mode){
     2{
         Write-Debug "Checking for the updates...";
         Get-Update
-    }
-
-    3{
-        Write-Debug "Removing Python Directory"
-        $host.UI.RawUI.WindowTitle = "Don't close this window, Closing this would affect the uninstallation process."
-        Write-Debug "Collecting INFO..."
-        
-        
-        $collected = Get-ChildItem -Path $PythonPath -Recurse -File | ForEach-Object {$_.FullName}
-        
-        $index = 0
-        $total = $collected.Length
-        foreach ($file in $collected) {
-            Remove-Item -path $file -Force
-            $index += 1;
-            Write-Progress -Activity "Removing Components of Python...`nDeleted:$file" -Status "Deleted Files $index / $total" -PercentComplete (($index / $total) * 100)
-        }
-
-        Write-Debug "Completed..."
     }
 }
 

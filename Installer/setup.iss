@@ -7,7 +7,7 @@
 #define ProjectRoot = "{app}/CO_PO"
 #define OpenTool = "../CO_PO/main.py"
 #define PyRoot = "{app}/python"
-#define Repo = "https://github.com/Tangellapalli-Srinivas/CO-PO-Mapping"
+#define Repo = "https://github.com/RahulARanger/CO-PO-Mapping"
 #include "misc.iss"
 
 [Setup]
@@ -75,8 +75,8 @@ AppMutex={#Mx}
 InfoBeforeFile="README.rtf"
 
 ; Below Value is Oberserved Value
-ExtraDiskSpaceRequired=28736046
-ReserveBytes=31330304
+ExtraDiskSpaceRequired=161244964
+ReserveBytes=204967936
 
 ; Comment this line if you want to locally setup
 SignTool=SignThis
@@ -87,10 +87,12 @@ SignTool=SignThis
 Source: "{tmp}\python.zip"; DestDir: "{app}"; flags: external skipifsourcedoesntexist; Permissions: users-modify;
 Source: "{tmp}\get-pip.py"; DestDir: "{app}"; flags: external skipifsourcedoesntexist; Permissions: users-modify;
 Source: "../CO_PO\assets\*"; DestDir: "{app}/CO_PO/assets";
-Source: "{tmp}\bootstrap.min.css"; DestDir: "{app}/CO_PO/assets"; flags: external skipifsourcedoesntexist; Permissions: users-modify;
+Source: "{tmp}\bootstrap.min.css"; DestDir: "{app}/CO_PO/assets"; flags: dontcopy external; Permissions: users-modify;
 Source: "./setup.ps1"; DestDir: "{app}"; Permissions: users-modify; Flags: deleteafterinstall;
 Source: "{app}/python/pythonw.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist deleteafterinstall;
 Source: "../gate.ps1"; DestDir: "{app}";
+Source: "../setup.cmd"; DestDir: "{app}"; 
+Source: "../CO_PO/scripts/*"; DestDir: "{app}/CO_PO/scripts";
 Source: "../requirements.txt"; DestDir: "{app}"; Permissions: users-modify; AfterInstall: PostInstall
 
 Source: "../CO_PO\*"; DestDir: "{app}/CO_PO";
@@ -165,12 +167,3 @@ begin
       MsgBox('Please close the necessary applications before uninstalling this application!', mbError, MB_OK)
 end;      
 
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-var
-ResultCode: Integer;
-begin
-  if CurUninstallStep = usUninstall then
-  begin
-    ExecPSScript('gate.ps1', True, '-mode 3', ResultCode);
-  end;
-end;

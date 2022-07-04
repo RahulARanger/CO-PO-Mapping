@@ -63,6 +63,8 @@ if($temp_file -and (Test-Path -Path $temp_file[0].FullName)){
     Remove-Item -Path $temp_file.Fullname
     Write-Output "Done"
 }
+
+Write-Debug "Installing Packages, May take some time. Please wait. Takes Around 5 Minutes"
 # Now we install external packages for the build from requirements.txt
 $temp_file = Join-Path -Path $ScriptPath -ChildPath "requirements.txt";
 if (Test-Path -Path $temp_file) {& $executable @("-m", "pip", "install", "-r", $temp_file)} else {}

@@ -38,8 +38,10 @@ class CoreApplication:
         # All Constants
         # Samples
 
-        self._sample_input = "assets/Sample Input.xlsx"
-        self._sample_output = "assets/Sample Output.txt"
+        self.assets = self.settings_path.parent / "assets"
+        self._sample_input = str(self.assets / "Sample Input.xlsx")
+        self._sample_output = str(self.assets / "Sample Output.txt")
+
         self._sample_input_dropdown = "__dropdown_sample_input"
         self._sample_output_dropdown = "__dropdown_sample_output"
         self._download_feed = "__download_feed"
@@ -92,9 +94,7 @@ class CoreApplication:
         self.__cache_disk = diskcache.Cache(str(self.temp))
         self.manager = DiskcacheLongCallbackManager(self.__cache_disk)
 
-        self.app = Dash(__name__, long_callback_manager=self.manager, external_stylesheets=[
-            "assets/index.css", "assets/bootstrap.min.css"
-        ])
+        self.app = Dash(__name__, long_callback_manager=self.manager)
         self.set_layout()
         self.set_callbacks()
         self.configure_upload()
@@ -340,7 +340,7 @@ class CoreApplication:
                                         "After Submitting, Make Sure to wait for this window,"
                                         " Which has the plotted result",
                                         dmc.Image(
-                                            src="assets/Sample Output Image.jpg"
+                                            src="/assets/Sample Output Image.jpg"
                                         )
                                     ]
                                 )
@@ -463,10 +463,10 @@ class CoreApplication:
             return no_update
 
         if ctx.triggered_id == self._sample_input_dropdown:
-            return dcc.send_file("assets/Sample Input.xlsx", filename="Sample Input.xlsx")
+            return dcc.send_file(self.assets / "Sample Input.xlsx", filename="Sample Input.xlsx")
 
         if ctx.triggered_id == self._sample_output_dropdown:
-            return dcc.send_file("assets/Sample Output.txt", filename="Sample Output.txt")
+            return dcc.send_file(self.assets / "Sample Output.txt", filename="Sample Output.txt")
 
         raw = json.loads(data if data else "{}")
 
@@ -624,7 +624,7 @@ if __name__ == "__main__":
     serve(core.app.server, port=port, host="localhost")
 
     subprocess.Popen(
-        ["setup", "-mode", "2", "-arguments", __version__],
+        [str(core.settings_path.parent.parent / "setup.cmd"), "-mode", "2", "-arguments", __version__],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=True,
