@@ -1,5 +1,4 @@
 contextvars
-DateTime==4.5
 dash~=2.5.1
 waitress==2.0.0
 openpyxl~=3.0.10

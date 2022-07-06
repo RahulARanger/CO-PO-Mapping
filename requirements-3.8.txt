@@ -1,0 +1,7 @@
+dash~=2.5.1
+waitress~=2.1.2
+openpyxl~=3.0.10
+packaging
+dash-mantine-components
+dash-bootstrap-components
+dash-uploader

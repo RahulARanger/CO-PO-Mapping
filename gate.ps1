@@ -72,13 +72,20 @@ function Get-Update{
     Write-Output "Updating..."
 
     $download_url = $response.assets.browser_download_url
-    $temp = Join-Path -Path $env:TEMP -ChildPath $response.assets.Name
-    write-Output $temp
+    $version = (& python.exe --version).SubString(7, 3);
 
-    Invoke-WebRequest -Uri $download_url -OutFile $temp
+    foreach($url in $download_url){
+        if($url.EndsWith("${version}.exe")){
+            $temp = Join-Path -Path $env:TEMP -ChildPath $response.assets.Name
+            write-Output $temp
 
-    Start-Process -FilePath $temp -Wait
-    Remove-Item -Path $temp
+            Invoke-WebRequest -Uri $download_url -OutFile $temp
+
+            Start-Process -FilePath $temp -Wait
+            Remove-Item -Path $temp
+            break;
+        }
+    }
 }
 
 

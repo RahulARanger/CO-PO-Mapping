@@ -1,4 +1,4 @@
-#define Version="0.3.1"
+#define Version="0.4.0"
 #define Name="CO-PO Mapping"
 #define Author="Tangellapalli Srinivas"
 #define Mx="CO-PO"
@@ -53,7 +53,7 @@ DefaultDirName="{autopf}\{#Name}"
 
 
 OutputDir="Output"
-OutputBaseFilename="{#Name}"
+OutputBaseFilename="{#Output}"
 
 ; uninstall exe file name 
 UninstallDisplayName="CO-PO-Uninstall"
@@ -99,7 +99,7 @@ Source: "../setup.cmd"; DestDir: "{app}";
 Source: "../CO_PO/scripts/*"; DestDir: "{app}/CO_PO/scripts";
 Source: "../CO_PO/docs/*"; DestDir: "{app}/CO_PO/docs/";
 
-Source: "../requirements.txt"; DestDir: "{app}"; Permissions: users-modify; AfterInstall: PostInstall
+Source: "../{#req}"; DestDir: "{app}"; Permissions: users-modify; AfterInstall: PostInstall; DestName: "requirements.txt";
 
 Source: "../CO_PO\*"; DestDir: "{app}/CO_PO";
 
