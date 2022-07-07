@@ -74,12 +74,15 @@ function Get-Update{
     $download_url = $response.assets.browser_download_url
     $version = (& python.exe --version).SubString(7, 3);
 
-    foreach($url in $download_url){
+    foreach($asset in $response.assets){
+        $url = $asset.browser_download_url;
+
         if($url.EndsWith("${version}.exe")){
-            $temp = Join-Path -Path $env:TEMP -ChildPath $response.assets.Name
+            
+            $temp = Join-Path -Path $env:TEMP -ChildPath $asset.Name
             write-Output $temp
 
-            Invoke-WebRequest -Uri $download_url -OutFile $temp
+            Invoke-WebRequest -Uri $url -OutFile $temp
 
             Start-Process -FilePath $temp -Wait
             Remove-Item -Path $temp
