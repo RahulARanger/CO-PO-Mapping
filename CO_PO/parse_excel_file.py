@@ -30,6 +30,8 @@ def parse_tables(tables_to_consider: int, workbook: Workbook, *sheets: typing.Li
         _sheet = workbook[SHEET]
         _tables = sorted(_sheet.tables.values(), key=lambda _: starting_table_number(_))
 
+        logging.info("Parsing the sheet %s", SHEET)
+
         if len(_tables) < tables_to_consider:
             raise ValueError(
                 f"Uploaded Workbook contains Sheet: `{SHEET}` which has less than {tables_to_consider} tables."
@@ -37,11 +39,15 @@ def parse_tables(tables_to_consider: int, workbook: Workbook, *sheets: typing.Li
             )
 
         for table in _tables[:tables_to_consider]:
+            logging.info("For sheet %s, parsing the table: %s", SHEET, table.displayName)
+
             table: Table = table
             yield [
                 [CELL.value for CELL in row]
                 for index, row in enumerate(_sheet[table.ref]) if index != 0
             ]
+
+            logging.info("Table %s of Sheet %s was parsed successfully", SHEET, table.displayName)
 
 
 class Engine:

@@ -7,6 +7,7 @@ import pathlib
 from dash import html, Input, Output, ctx, no_update, State, dcc
 import dash_mantine_components as dmc
 from CO_PO.parse_excel_file import Engine
+import shutil
 import tempfile
 import logging
 from waitress import serve
@@ -44,16 +45,8 @@ class CoreApplication(ModelsComponent):
 
     def set_callbacks(self):
         self.app.callback(
-            Output(self._modal_for_shutdown, "opened"),
             Output(self.for_shutdown, "children"),
-            [
-                Input(self._shutdown, "n_clicks"),
-                Input(self._shutdown_close, "n_clicks"),
-                Input(self.confirm_shutdown, "n_clicks")
-            ],
-            [
-                State(self._modal_for_shutdown, "opened")
-            ]
+            Input(self.confirm_shutdown, "n_clicks")
         )(self._shutdown_this)
 
         self.app.callback(
@@ -102,17 +95,14 @@ class CoreApplication(ModelsComponent):
         )(self._set_settings)
 
         self.app.callback(
-            Output(self.final_step, "opened"),
-            Input(self._help_for_input, "n_clicks"),
-            State(self.final_step, "opened")
-        )(
-            lambda _, opened: not opened if _ else no_update
-        )
-
-        self.app.callback(
-            Output(self._modal_for_clear_cache, "opened"),
-            Input(self._clear_cache, "n_clicks"),
-            State(self._modal_for_clear_cache, "opened")
+            [
+                Output(self._files, "children"),
+                Output(self._total_size, "children")
+            ],
+            [
+                Input(self.confirm_clear, "n_clicks"),
+                Input(self._modal_id + self._clear_cache, "opened")
+            ]
         )(
             self._handle_clear_cache
         )
@@ -156,18 +146,14 @@ class CoreApplication(ModelsComponent):
 
         return dcc.send_file(path, filename=name + ".txt")
 
-    def _shutdown_this(self, _, __, ___, opened):
-        if not any((_, __, ___)):
-            return False, no_update
-
-        so = not opened
-
-        if ctx.triggered_id != self.confirm_shutdown:
-            return so, no_update
+    def _shutdown_this(self, _):
+        if not _:
+            return no_update
 
         self.engine.stop_engine()
         close_main_thread_in_good_way()
-        return so, show_notifications(
+
+        return show_notifications(
             "Server was closed",
             "You can close this tab and any other tabs that was open with this url.",
             color="orange"
@@ -270,10 +256,32 @@ class CoreApplication(ModelsComponent):
         })
 
     def _handle_clear_cache(self, _, opened):
-        if not _:
-            return no_update
+        if not opened:
+            return no_update, no_update
 
-        return not opened
+        if ctx.triggered_id == self.confirm_clear:
+            shutil.rmtree(self.temp)
+            self.temp.mkdir()
+
+        parents = [self.temp]
+        files = 0
+        size = 0
+
+        while parents:
+            parent = parents.pop()
+            size += parent.stat().st_size
+
+            for entity in parent.iterdir():
+                if entity.is_file():
+                    files += 1
+                    size += entity.stat().st_size
+
+                if entity.is_dir():
+                    parents.append(entity)
+        print(files)
+        print(size)
+
+        return f"Files: {files}", f"Total Size: {size / 1e6} MB"
 
 
 core = CoreApplication()
@@ -296,6 +304,6 @@ if __name__ == "__main__":
 
     shell_exc("3")  # to clear cache, if no applications are running
     shell_exc("2", __version__) if core.handle_settings()[core.auto_update] else ...
-
+#
 # if __name__ == "__main__":
 #     core.app.run_server(debug=True)

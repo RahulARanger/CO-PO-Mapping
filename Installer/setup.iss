@@ -1,4 +1,4 @@
-#define Version="0.4.0"
+#define Version="0.4.3"
 #define Name="CO-PO Mapping"
 #define Author="Tangellapalli Srinivas"
 #define Mx="CO-PO"
@@ -150,7 +150,7 @@ begin
   Ask := True;
   ImplicitExitCode := -1073741510;
   Downloaded := True;
-  DownloadPage := CreateDownloadPage('Downloading Python...', 'Downloading & Extracting Embedded python 3.6.8.zip', @OnDownloadProgress);
+  DownloadPage := CreateDownloadPage('Downloading Python...', 'Downloading & Extracting Embedded Python', @OnDownloadProgress);
   DataOutDated := False;
 end;
                                     

@@ -5,3 +5,24 @@ window.onload = function() {
         return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
     });
 };
+
+
+
+function decide_modal(n_clicks, opened){
+    console.log(n_clicks, opened)
+    if(n_clicks === undefined){
+        return false;
+    }
+    return !Boolean(opened);
+}
+
+
+
+window.dash_clientside = Object.assign({}, window.dash_clientside, {
+    modal:{
+        decide_modal
+    }
+});
+
+
+console.log(window.dash_clientside)

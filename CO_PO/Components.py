@@ -1,7 +1,7 @@
 import string
 import random
 import typing
-from dash import html, no_update, dcc
+from dash import html, no_update, dcc, Input, State, Output, ClientsideFunction
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from CO_PO.AppConfig import BaseApplication, time_format
@@ -81,7 +81,34 @@ class HeaderComponent(BaseApplication):
         self._fetch = "__fetch_status"
         self._shutdown = "__shutdown"
 
+        self._modal_id = "_modal"
+
         super().__init__()
+
+    def get_modal(self, title, children, button_id, centered=True):
+        _modal_id = self._modal_id + button_id
+
+        self.app.clientside_callback(
+            ClientsideFunction(
+                namespace="modal",
+                function_name="decide_modal"
+            ),
+            Output(_modal_id, "opened"),
+            Input(button_id, "n_clicks"),
+            State(_modal_id, "opened")
+        )
+
+        return dmc.Modal(
+            title=title,
+            children=children,
+            centered=centered,
+            id=_modal_id
+        )
+
+    def set_modal(self, button_id):
+        _modal_id = self._modal_id + button_id
+
+
 
     def _header(self):
         return dbc.NavbarSimple(
@@ -117,13 +144,13 @@ class HeaderComponent(BaseApplication):
                             "Engine ⚙", header=True
                         ),
                         dbc.DropdownMenuItem(
-                            "Check Status", n_clicks=0, id=self._check_input
+                            "Check Status", id=self._check_input
                         ),
                         dbc.DropdownMenuItem(
-                            "Clear Cache", n_clicks=0, id=self._clear_cache
+                            "Clear Cache", id=self._clear_cache
                         ),
                         dbc.DropdownMenuItem(
-                            "Shutdown", n_clicks=0, id=self._shutdown
+                            "Shutdown", id=self._shutdown
                         )
                     ],
                     menu_variant="dark",
@@ -262,83 +289,77 @@ class NotificationComponents(FormComponent):
 class ModelsComponent(NotificationComponents):
     def __init__(self):
         # -> Modals
-        self._modal_for_shutdown = "__modal_for_shutdown"
         self.final_step = "__modal_for_process"
-        self._modal_for_clear_cache = "__modal_for_clear_cache"
 
         # --> Modals Components
         self._shutdown = "__shutdown"
         self._shutdown_close = "__close_modal"
         self.confirm_shutdown = self._shutdown + "confirm"
         self.confirm_process = "confirm_process"
+        self.confirm_clear = "_confirm_clear"
+        self._files = "__files_"
+        self._total_size = "__total_size"
 
         super().__init__()
 
     def _for_shutdown(self):
-        return dmc.Modal(
-            title="Want to Shutdown ?",
-            id=self._modal_for_shutdown,
-            children=[
+        return self.get_modal(
+            "Want to Shutdown ?",
+            [
                 dmc.Text("Closing this Application may stop all the running tasks!"),
                 dmc.Space(h=20),
-                dmc.Group(
-                    [
-                        dmc.Button("Shutdown", id=self.confirm_shutdown, color="red"),
-                        dmc.Button(
-                            "Cancel",
-                            color="green",
-                            variant="outline",
-                            id=self._shutdown_close
-                        ),
-                    ],
-                    position="right",
-                ),
+                dmc.Group(dmc.Button("Shutdown", id=self.confirm_shutdown, color="red"), position="right"),
             ],
+            self._shutdown, False
         )
 
     def _help_for_input_modal(self):
-        return dmc.Modal(
-            title="Help for Upload",
-            centered=True,
-            id=self.final_step,
-            children=dcc.Markdown(
+        return self.get_modal(
+            "Help for Upload", dcc.Markdown(
                 (self.docs / "input.md").read_text()
-            )
+            ), self._help_for_input
         )
 
     def _clear_cache_modal(self):
-        return dmc.Modal(
-            title="Clear Cache",
-            centered=True,
-            id=self._modal_for_clear_cache,
-            children=[
+        return self.get_modal(
+            "Clear Cache",
+            [
                 dmc.Alert(
-                    "Whenever files are uploaded, they are stored in the local folder as a temp files."
-                    "It normally deletes all the files, when application was gracefully closed "
-                    "(through \"Shutdown\" Button). But it is possible to miss some files. "
-                    "So clearing those can save some space on your disk.",
+                    "Uploaded files are stored in your hard disk. It is possible they are cleared properly.",
                     title="Why?",
                     color="violet",
                     variant="filled"
                 ),
+                dmc.Space(h=30),
                 dmc.Alert(
-                    "Deleting the temp files would also delete the "
-                    "files that you might have uploaded now or used in the existing process. Make sure no processes"
-                    " are running, by \"Check Status\"",
+                    "Make sure no process is currently running. As this could clear all the uploaded files.",
                     color="red",
                     title="Note Before",
                     variant="filled"
                 ),
-                dmc.Space(h=30),
-                dmc.Space(h=20),
-                dmc.Button(
-                    "Delete Cache",
-                    class_name="custom-butt",
-                    style={
-                        "float": "right"
-                    }
+                dmc.Space(h=15),
+                dmc.Group(
+                    [
+                        dmc.Badge(
+                            "Files: 0",
+                            color="orange", size="lg", id=self._files
+                        ),
+                        dmc.Badge(
+                            "Total Size: 0MB",
+                            color="orange", size="lg", id=self._total_size
+                        ),
+                        dmc.Button(
+                            "Delete Cache",
+                            class_name="custom-butt",
+                            style={
+                                "float": "right"
+                            },
+                            id=self.confirm_clear
+                        )
+                    ], spacing="md", align="center", position="right"
                 )
-            ]
+            ],
+            self._clear_cache
         )
 
     def _modals(self):
