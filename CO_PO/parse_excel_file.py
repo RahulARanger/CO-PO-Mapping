@@ -43,7 +43,7 @@ def parse_tables(tables_to_consider: int, workbook: Workbook, *sheets: typing.Li
 
             table: Table = table
             yield [
-                [CELL.value for CELL in row]
+                [float(str(CELL.value).strip()) for CELL in row]
                 for index, row in enumerate(_sheet[table.ref]) if index != 0
             ]
 
