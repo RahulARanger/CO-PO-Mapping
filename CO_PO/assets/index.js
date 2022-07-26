@@ -16,11 +16,18 @@ function decide_modal(n_clicks, opened){
     return !Boolean(opened);
 }
 
+function get_latest_info(current_version){
+    
+}
+
 
 
 window.dash_clientside = Object.assign({}, window.dash_clientside, {
     modal:{
         decide_modal
+    },
+    tips: {
+        handle_tips: (opened) => new Array(4).fill(opened)
     }
 });
 

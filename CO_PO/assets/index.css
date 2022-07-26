@@ -28,17 +28,43 @@ body{
 
 nav{
     background-image: linear-gradient(to left top, #312d2f, #302c2d, #2f2b2b, #2e2a29, #2c2928);
-    padding: 0px !important;
-    margin: 0px !important;
-    min-height: 45px;
-    justify-content: space-between !important;
+    z-index: 1 !important;
     box-shadow: var(--bottom-lift);
-    z-index: 1;
+    padding: 6.9px;
 }
-
-nav > a.navbar-brand{
+#__name{
     margin: auto 0px;
     font-size: 2rem;
+    color: #f6f7fa !important;
+    text-decoration: none;
+
+    text-shadow: 
+                0 -1px 0 #f65200,
+               0 1px 10px rgba(0,0,0,.6),
+               0 6px 1px rgba(0,0,0,.1),
+               0 0 5px rgba(0,0,0,.2),
+               0 1px 3px rgba(0,0,0,.3),
+               0 3px 5px rgba(0,0,0,.2),
+               0 7px 10px rgba(0,0,0,.25),
+               0 15px 10px rgba(0,0,0,.2),
+               0 25px 15px rgba(75, 29, 0, 0.085);
+
+    transition: var(--standard-transition);
+}
+
+#__name:hover{
+
+    text-shadow: 
+                0 -1px 0 #858585,
+               0 1px 10px rgba(0, 0, 0, 0.6),
+               0 6px 1px rgba(0,0,0,.1),
+               0 0 5px rgba(0,0,0,.2),
+               0 1px 3px rgba(0,0,0,.3),
+               0 3px 5px rgba(0,0,0,.2),
+               0 7px 10px rgba(0,0,0,.25),
+               0 15px 10px rgba(0,0,0,.2),
+               0 25px 15px rgba(0,0,0,.15);
+    
 }
 
 header > section{
@@ -176,3 +202,8 @@ button.mantine-ActionIcon-root{
     box-shadow: var(--bottom-lift);
     background-color: var(--card-black);
 }
+
+div.mantine-Switch-root > *{
+    cursor: pointer !important;
+}
+

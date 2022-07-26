@@ -10,15 +10,6 @@ import dash_uploader as du
 import pathlib
 
 
-def get_header():
-    html.Thead(
-        [
-            html.Tr(_)
-            for _ in ("File Name", "File Size", "Created Date")
-        ]
-    )
-
-
 def set_timestamp(title):
     return title, dmc.Text(time_format(), size="xs")
 
@@ -80,12 +71,29 @@ class HeaderComponent(BaseApplication):
         self.auto_update = "auto_update"
         self._fetch = "__fetch_status"
         self._shutdown = "__shutdown"
+        self._settings = "__settings"
+        self._s_check = "__last_status_check"
+        self._ask_help = "__ask_help"
 
         self._modal_id = "_modal"
 
         super().__init__()
 
-    def get_modal(self, title, children, button_id, centered=True):
+    def gen_tip(self, for_element, help_text, pos="right", place="start", width=None):
+        return dmc.Tooltip(
+            children=for_element,
+            wrapLines=True,
+            label=help_text,
+            position=pos,
+            color="blue",
+            withArrow=True,
+            placement=place,
+            style={"width": "100%"},
+            id=self._tool_tips(),
+            width=width
+        )
+
+    def get_modal(self, title, children, button_id, centered=True, z_index=4):
         _modal_id = self._modal_id + button_id
 
         self.app.clientside_callback(
@@ -102,78 +110,105 @@ class HeaderComponent(BaseApplication):
             title=title,
             children=children,
             centered=centered,
-            id=_modal_id
+            id=_modal_id, zIndex=z_index
         )
 
     def set_modal(self, button_id):
         _modal_id = self._modal_id + button_id
 
-
-
     def _header(self):
-        return dbc.NavbarSimple(
+        return dmc.Header(dmc.Group(
             [
-                dbc.DropdownMenu(
+                self.gen_tip(
+                    dcc.Link(
+                        dmc.Title(
+                            "CO-PO Mapping", order=3
+                        ),
+                        href=self.repo,
+                        target='_blank',
+                        id="__name",
+                        title="Redirects to Related GitHub Repo."
+                    ),
+                    "Redirects to GitHub Repo., Place where you can file issues / errors / see the releases, etc...",
+                    "bottom",
+                    "start"
+                ), dmc.Group([
+                    self.gen_tip(
+                        dmc.ActionIcon(
+                            children="⚙", id=self._settings
+                        ),
+                        "Settings, You can clear cache, set auto-update, etc...",
+                        "bottom", "center"
+                    ),
+                    dmc.Menu(
+                        [
+                            dmc.MenuLabel("Help"),
+                            dmc.MenuItem("Docs", color="teal"),
+                            dmc.MenuItem("About", color="orange"),
+                            dmc.MenuItem("ChangeLog", color="orange"),
+                            dmc.Divider(),
+                            dmc.MenuItem("Sample Input", color="yellow", id=self._sample_input_dropdown),
+                            dmc.MenuItem("Sample Output", color="green", id=self._sample_output_dropdown)
+                        ], withArrow=True, size="md", shadow="lg", trigger="hover"
+                    ),
+                    dmc.ActionIcon(
+                        dmc.Image(
+                            src="assets/shutdown.svg"
+                        ), id=self._shutdown
+                    ),
+                    dmc.Switch(
+                        label="Show Help",
+                        onLabel="Yes",
+                        offLabel="No",
+                        color="orange",
+                        size="sm",
+                        checked=False,
+                        id=self._ask_help
+                    )
+                ], align="center")]
+            , position="apart", align="center"))
+
+    def _settings_modal(self):
+        body = dmc.Group([
+            dmc.Alert(
+                [
+                    dmc.Group(
+                        [
+                            dmc.Text(
+                                "Engine's status can either be loading or free or processing.", size="sm"
+                            ),
+                            dmc.Button(
+                                "Check Status", variant="outline", color="orange", id=self._check_input, size="xs",
+                                radius="xs"),
+                            dmc.Text(time_format("Last checked at: "), color="orange", size="xs", id=self._s_check)
+                        ], align="flex-end"
+                    )
+                ], color="teal", title="Engine Status", variant="outline"
+            ),
+            dmc.Alert(
+                dmc.Group(
                     [
-                        dbc.DropdownMenuItem(
-                            "Help 👋", header=True
-                        ),
-                        dbc.DropdownMenuItem(
-                            "About", n_clicks=0
-                        ),
-                        dbc.DropdownMenuItem(
-                            "Documentation"
-                        ),
-                        dbc.DropdownMenuItem(
-                            "Sample Input", n_clicks=0, id=self._sample_input_dropdown
-                        ),
-                        dbc.DropdownMenuItem(
-                            "Sample Output", n_clicks=0, id=self._sample_output_dropdown
-                        )
-                    ],
-                    menu_variant="dark",
-                    nav=True,
-                    in_navbar=True,
-                    color="info",
-                    align_end=True,
-                    label="Help 👋"
-                ),
-                dbc.DropdownMenu(
-                    [
-                        dbc.DropdownMenuItem(
-                            "Engine ⚙", header=True
-                        ),
-                        dbc.DropdownMenuItem(
-                            "Check Status", id=self._check_input
-                        ),
-                        dbc.DropdownMenuItem(
-                            "Clear Cache", id=self._clear_cache
-                        ),
-                        dbc.DropdownMenuItem(
-                            "Shutdown", id=self._shutdown
-                        )
-                    ],
-                    menu_variant="dark",
-                    nav=True,
-                    in_navbar=True,
-                    color="info",
-                    align_end=True,
-                    label="Engine ⚙"
-                ),
-                dmc.Switch(
-                    label="Auto Check Updates",
-                    onLabel="Yes",
-                    offLabel="No",
-                    color="orange",
-                    size="md",
-                    id=self.auto_update,
-                    checked=self.settings[self.auto_update]
-                )
-            ],
-            brand="CO-PO Mapping",
-            brand_href=self.repo,
-            light=False,
-            dark=True
+                        dmc.Text(
+                            "Uploaded files are stored in your hard disk. It is possible they are not cleared properly."
+                            " By this option you can force clear those files.", size="sm"),
+                        dmc.Button("Clear Cache", variant="outline", color="orange", id=self._clear_cache, size="xs"),
+                    ], align="center", position="right"
+                ), title="Clear Cache", color="violet", variant="outline"
+            ),
+            dmc.Switch(
+                label="Auto Check Updates",
+                onLabel="Yes",
+                offLabel="No",
+                color="orange",
+                id=self.auto_update,
+                checked=self.settings[self.auto_update]
+            )
+        ], spacing="sm", direction="column", align="stretch")
+
+        return self.get_modal(
+            "Settings ⚙",
+            body,
+            self._settings, z_index=2
         )
 
 
@@ -197,43 +232,43 @@ class FormComponent(HeaderComponent):
                         dbc.CardHeader(
                             "Upload the Data File"
                         ),
-                        dbc.CardBody(
+                        dbc.CardBody(dmc.Group(
                             [
                                 # max size: 1GB (default)
-                                du.Upload(
-                                    id=self.upload_button,
-                                    filetypes=[
-                                        "xlsx"
-                                    ]
+                                self.gen_tip(
+                                    du.Upload(
+                                        id=self.upload_button,
+                                        filetypes=[
+                                            "xlsx"
+                                        ]
+                                    ),
+                                    "You can upload excel .xlsx file here. Make sure it follows the format."
                                 ),
-                                dmc.Space(h="xs"),
                                 html.Em(
                                     dmc.Highlight(
-                                        "Only .xlsx files are allowed to be uploaded",
+                                        "Only .xlsx files are allowed",
                                         highlight=[".xlsx", "allowed"],
                                         highlightColor="orange", size="xs", align="right"
                                     )
                                 ),
-                                dmc.Space(h=10),
                                 dmc.TextInput(label="Uploaded File", required=True, disabled=True, id=self.uploaded),
-                                dmc.Space(h=10),
-                                dmc.NumberInput(
-                                    label="No. of Exams",
-                                    description="Enter the Number of Exams conducted",
-                                    required=True,
-                                    min=1,
-                                    max=100,
-                                    id=self.exams
+                                self.gen_tip(
+                                    dmc.NumberInput(
+                                        label="No. of Exams",
+                                        description="Enter the Number of Exams conducted",
+                                        required=True,
+                                        min=1,
+                                        max=100,
+                                        id=self.exams
+                                    ),
+                                    "This is where we give Number of Examinations", place="end"
                                 ),
                                 dmc.ActionIcon(
                                     dmc.Image(src="/assets/help.svg", alt="Get Help"),
                                     class_name="position-absolute top-0 start-100 translate-middle",
                                     id=self._help_for_input
                                 )
-                            ],
-                            style={
-                                "width": "100%"
-                            }
+                            ], spacing="xs", direction="column", position="center", align="stretch")
                         ),
                         dbc.CardFooter(
                             [
@@ -280,7 +315,7 @@ class NotificationComponents(FormComponent):
                     for _ in (self.for_file_upload, self.for_shutdown, self.for_process)
                 )
             ],
-            zIndex=2,
+            zIndex=4,
             position="bottom-right",
             limit=100
         )
@@ -325,14 +360,8 @@ class ModelsComponent(NotificationComponents):
             "Clear Cache",
             [
                 dmc.Alert(
-                    "Uploaded files are stored in your hard disk. It is possible they are cleared properly.",
-                    title="Why?",
-                    color="violet",
-                    variant="filled"
-                ),
-                dmc.Space(h=30),
-                dmc.Alert(
-                    "Make sure no process is currently running. As this could clear all the uploaded files.",
+                    "Make sure no processes are currently running. As this could clear the files that are currently "
+                    "in use by the application.",
                     color="red",
                     title="Note Before",
                     variant="filled"
@@ -342,11 +371,11 @@ class ModelsComponent(NotificationComponents):
                     [
                         dmc.Badge(
                             "Files: 0",
-                            color="orange", size="lg", id=self._files
+                            color="violet", size="lg", id=self._files
                         ),
                         dmc.Badge(
                             "Total Size: 0MB",
-                            color="orange", size="lg", id=self._total_size
+                            color="violet", size="lg", id=self._total_size
                         ),
                         dmc.Button(
                             "Delete Cache",
@@ -356,7 +385,7 @@ class ModelsComponent(NotificationComponents):
                             },
                             id=self.confirm_clear
                         )
-                    ], spacing="md", align="center", position="right"
+                    ], spacing="md", align="center", position="right", noWrap=True
                 )
             ],
             self._clear_cache
@@ -366,5 +395,6 @@ class ModelsComponent(NotificationComponents):
         return html.Div([
             self._for_shutdown(),
             self._help_for_input_modal(),
-            self._clear_cache_modal()
+            self._clear_cache_modal(),
+            self._settings_modal()
         ], id="modals")

@@ -25,6 +25,7 @@ class BaseApplication:
         self.assets = self.settings_path.parent / "assets"
         self._sample_input = str(self.assets / "Sample Input.xlsx")
         self._sample_output = str(self.assets / "Sample Output.txt")
+        self.__tool_tip = -1
 
         self.set_layout()
         self.set_callbacks()
@@ -47,9 +48,17 @@ class BaseApplication:
         self.settings_path.write_text(json.dumps(self.settings))
         return self.settings
 
+    def _tool_tips(self):
+        self.__tool_tip += 1
+        return f"__tool_tip_help_{self.__tool_tip}"
 
-def time_format():
-    return datetime.datetime.now().strftime("%H:%M:%S")
+    def _get_tips(self):
+        for _ in range(self.__tool_tip + 1):
+            yield f"__tool_tip_help_{_}"
+
+
+def time_format(prefix=""):
+    return prefix + datetime.datetime.now().strftime("%H:%M:%S")
 
 
 def close_main_thread_in_good_way(wait=0.9):

@@ -71,8 +71,7 @@ function Get-Update{
 
     Write-Output "Updating..."
 
-    $download_url = $response.assets.browser_download_url
-    $version = (& python.exe --version).SubString(7, 3);
+    $version = (& "./Python/python.exe" --version).SubString(7, 3);
 
     foreach($asset in $response.assets){
         $url = $asset.browser_download_url;

@@ -4,14 +4,14 @@ import threading
 import traceback
 import dash_uploader as du
 import pathlib
-from dash import html, Input, Output, ctx, no_update, State, dcc
+from dash import html, Input, Output, ctx, no_update, State, dcc, ClientsideFunction
 import dash_mantine_components as dmc
 from CO_PO.parse_excel_file import Engine
 import shutil
 import tempfile
 import logging
 from waitress import serve
-from CO_PO.Components import ModelsComponent, show_notifications, set_file_path
+from CO_PO.Components import ModelsComponent, show_notifications, set_file_path, time_format
 from CO_PO.AppConfig import open_local_url, get_free_port, output_format, close_main_thread_in_good_way, shell_exc
 from CO_PO import __version__
 
@@ -65,7 +65,8 @@ class CoreApplication(ModelsComponent):
         self.app.callback(
             [
                 Output(self.for_process, "children"),
-                Output(self.result_for_process, "data")
+                Output(self.result_for_process, "data"),
+                Output(self._s_check, "children")
             ],
             [
                 Input(self.confirm_process, "n_clicks"),
@@ -123,6 +124,7 @@ class CoreApplication(ModelsComponent):
             ],
             id=self.loading_overlay,
         ), theme={"colorScheme": "dark"})
+        self._set_help_tips()
 
     def _download_feeder(self, _, __, ___, data):
         if not any((_, __, ___)):
@@ -171,7 +173,9 @@ class CoreApplication(ModelsComponent):
 
     def _process_input(self, _, __, file_path, exams):
         if not (_ or __):
-            return no_update, no_update
+            return no_update
+
+        last_checked = time_format("Last checked at: ")
 
         if ctx.triggered_id == self._check_input:
             if self.engine.loading.locked():
@@ -186,7 +190,7 @@ class CoreApplication(ModelsComponent):
                 note,
                 auto_close=6000,
                 color="pink"
-            ), no_update
+            ), no_update, last_checked
 
         uploaded = pathlib.Path(file_path) if file_path else None
 
@@ -194,13 +198,13 @@ class CoreApplication(ModelsComponent):
             return show_notifications(
                 "File not uploaded",
                 "Please try again after uploading a file."
-            ), no_update
+            ), no_update, last_checked
 
         if not exams:
             return show_notifications(
                 "Invalid value for exams",
                 "Please provide valid number for number of examinations"
-            ), no_update
+            ), no_update, last_checked
 
         if self.engine.processing.locked():
             return show_notifications(
@@ -208,7 +212,7 @@ class CoreApplication(ModelsComponent):
                 "Engine is already processing previous request. ",
                 dmc.Code("Please start a new process or wait for results."),
                 color="red"
-            ), no_update
+            ), no_update, last_checked
 
         self.engine.load()
 
@@ -230,7 +234,7 @@ class CoreApplication(ModelsComponent):
             ), json.dumps({
                 "is_error": True,
                 "results": str(error),
-            })
+            }), last_checked
 
         except Exception as error:
             # RARE CASES
@@ -253,7 +257,7 @@ class CoreApplication(ModelsComponent):
         return note, json.dumps({
             "is_error": is_error,
             "results": output_format(*results) if is_error else results[0],
-        })
+        }), last_checked
 
     def _handle_clear_cache(self, _, opened):
         if not opened:
@@ -281,7 +285,17 @@ class CoreApplication(ModelsComponent):
         print(files)
         print(size)
 
-        return f"Files: {files}", f"Total Size: {size / 1e6} MB"
+        return f"Files: {files}", f"Total Size: {(size / 1e6):.2f} MB"
+
+    def _set_help_tips(self):
+        self.app.clientside_callback(
+            ClientsideFunction(
+                namespace="tips",
+                function_name="handle_tips"
+            ),
+            [Output(_, "opened") for _ in self._get_tips()],
+            Input(self._ask_help, "checked")
+        )
 
 
 core = CoreApplication()
@@ -304,6 +318,6 @@ if __name__ == "__main__":
 
     shell_exc("3")  # to clear cache, if no applications are running
     shell_exc("2", __version__) if core.handle_settings()[core.auto_update] else ...
-#
+
 # if __name__ == "__main__":
 #     core.app.run_server(debug=True)
