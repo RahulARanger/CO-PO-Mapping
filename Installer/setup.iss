@@ -79,7 +79,7 @@ ExtraDiskSpaceRequired=161244964
 ReserveBytes=204967936
 
 ; Comment this line if you want to locally setup
-SignTool=SignThis
+; SignTool=SignThis
 
 
 

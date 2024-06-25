@@ -11,7 +11,7 @@ import shutil
 import tempfile
 import logging
 from waitress import serve
-from CO_PO.Components import ModelsComponent, show_notifications, set_file_path, time_format
+from CO_PO.components import ModelsComponent, show_notifications, set_file_path, time_format
 from CO_PO.AppConfig import open_local_url, get_free_port, output_format, close_main_thread_in_good_way, shell_exc
 from CO_PO import __version__
 
