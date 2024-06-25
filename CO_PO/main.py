@@ -9,14 +9,15 @@ import dash_mantine_components as dmc
 from CO_PO.parse_excel_file import Engine
 import shutil
 import tempfile
-import logging
 from waitress import serve
-from CO_PO.components import ModelsComponent, show_notifications, set_file_path, time_format
+from CO_PO.glue import ModelsComponent, show_notifications, set_file_path, time_format
 from CO_PO.AppConfig import open_local_url, get_free_port, output_format, close_main_thread_in_good_way, shell_exc
 from CO_PO import __version__
+from CO_PO.system_scripts import minimize, restore
+import logging
 
 logging.basicConfig(
-    level=logging.INFO
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%m/%d/%Y %I:%M"
 )
 
 
@@ -282,8 +283,8 @@ class CoreApplication(ModelsComponent):
 
                 if entity.is_dir():
                     parents.append(entity)
-        print(files)
-        print(size)
+        # print(files)
+        # print(size)
 
         return f"Files: {files}", f"Total Size: {(size / 1e6):.2f} MB"
 
@@ -311,13 +312,15 @@ def upload_status(status):
     return status[0]
 
 
+minimize()
+
 if __name__ == "__main__":
     port = get_free_port()
     open_local_url(port)
     serve(core.app.server, port=port, host="localhost")
 
+    restore()
+    logging.info("done graceful shutdown!")
+
     shell_exc("3")  # to clear cache, if no applications are running
     shell_exc("2", __version__) if core.handle_settings()[core.auto_update] else ...
-
-# if __name__ == "__main__":
-#     core.app.run_server(debug=True)

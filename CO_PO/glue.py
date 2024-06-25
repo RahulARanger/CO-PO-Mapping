@@ -1,29 +1,11 @@
-import string
-import random
-import typing
 from dash import html, no_update, dcc, Input, State, Output, ClientsideFunction
-import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
-from CO_PO.AppConfig import BaseApplication, time_format
+from CO_PO.AppConfig import BaseApplication
+from CO_PO.Components.card import Card
 from CO_PO import __version__
+from CO_PO.Components.notify import show_notifications, time_format
 import dash_uploader as du
 import pathlib
-
-
-def set_timestamp(title):
-    return title, dmc.Text(time_format(), size="xs")
-
-
-def show_notifications(title, *message, auto_close: typing.Union[bool, int] = False, color="red"):
-    return dmc.Notification(
-        title=set_timestamp(title),
-        color=color,
-        autoClose=auto_close,
-        disallowClose=False,
-        message=message,
-        action="show",
-        id="".join(random.choices(string.ascii_letters, k=10))
-    )
 
 
 def set_file_path(new_path, old_path):
@@ -225,75 +207,66 @@ class FormComponent(HeaderComponent):
         super().__init__()
 
     def _body(self):
-        return html.Section(
+        card = Card()
+        card.header = "Upload the Date File"
+        card.footer = [
+            dmc.Button(
+                "Process",
+                class_name="custom-butt",
+                style={
+                    "float": "right"
+                },
+                id=self.confirm_process
+            ),
+            dmc.Button(
+                "Results ⭐",
+                class_name="custom-butt",
+                style={
+                    "float": "left"
+                },
+                id=self._result
+            )
+        ]
+
+        card.body = dmc.Group(
             [
-                dbc.Card(
-                    [
-                        dbc.CardHeader(
-                            "Upload the Data File"
-                        ),
-                        dbc.CardBody(dmc.Group(
-                            [
-                                # max size: 1GB (default)
-                                self.gen_tip(
-                                    du.Upload(
-                                        id=self.upload_button,
-                                        filetypes=[
-                                            "xlsx"
-                                        ]
-                                    ),
-                                    "You can upload excel .xlsx file here. Make sure it follows the format."
-                                ),
-                                html.Em(
-                                    dmc.Highlight(
-                                        "Only .xlsx files are allowed",
-                                        highlight=[".xlsx", "allowed"],
-                                        highlightColor="orange", size="xs", align="right"
-                                    )
-                                ),
-                                dmc.TextInput(label="Uploaded File", required=True, disabled=True, id=self.uploaded),
-                                self.gen_tip(
-                                    dmc.NumberInput(
-                                        label="No. of Exams",
-                                        description="Enter the Number of Exams conducted",
-                                        required=True,
-                                        min=1,
-                                        max=100,
-                                        id=self.exams
-                                    ),
-                                    "This is where we give Number of Examinations", place="end"
-                                ),
-                                dmc.ActionIcon(
-                                    dmc.Image(src="/assets/help.svg", alt="Get Help"),
-                                    class_name="position-absolute top-0 start-100 translate-middle",
-                                    id=self._help_for_input
-                                )
-                            ], spacing="xs", direction="column", position="center", align="stretch")
-                        ),
-                        dbc.CardFooter(
-                            [
-                                dmc.Button(
-                                    "Process",
-                                    class_name="custom-butt",
-                                    style={
-                                        "float": "right"
-                                    },
-                                    id=self.confirm_process
-                                ),
-                                dmc.Button(
-                                    "Results ⭐",
-                                    class_name="custom-butt",
-                                    style={
-                                        "float": "left"
-                                    },
-                                    id=self._result
-                                )
-                            ]
-                        )
-                    ]
+                # max size: 1GB (default)
+                self.gen_tip(
+                    du.Upload(
+                        id=self.upload_button,
+                        filetypes=[
+                            "xlsx"
+                        ]
+                    ),
+                    "You can upload excel .xlsx file here. Make sure it follows the format."
+                ),
+                html.Em(
+                    dmc.Highlight(
+                        "Only .xlsx files are allowed",
+                        highlight=[".xlsx", "allowed"],
+                        highlightColor="orange", size="xs", align="right"
+                    )
+                ),
+                dmc.TextInput(label="Uploaded File", required=True, disabled=True, id=self.uploaded),
+                self.gen_tip(
+                    dmc.NumberInput(
+                        label="No. of Exams",
+                        description="Enter the Number of Exams conducted",
+                        required=True,
+                        min=1,
+                        max=100,
+                        id=self.exams
+                    ),
+                    "This is where we give Number of Examinations", place="end"
+                ),
+                dmc.ActionIcon(
+                    dmc.Image(src="/assets/help.svg", alt="Get Help"),
+                    class_name="position-absolute top-0 start-100 translate-middle",
+                    id=self._help_for_input
                 )
-            ], className="actual-body"
-        )
+            ], spacing="xs", direction="column", position="center", align="stretch")
+
+        return html.Section(card(), className="actual-body")
 
 
 class NotificationComponents(FormComponent):

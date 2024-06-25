@@ -1,5 +1,6 @@
 import gc
 import logging
+import os
 import pathlib
 import typing
 import matlab.engine
@@ -54,20 +55,33 @@ class Engine:
     def __init__(self):
         super().__init__()
         self.matlab_engine = None
+        self.future_response = None
         self.loading = Lock()
         self.processing = Lock()
         self.raw = []
+        self._engine_pid = None
 
     def load(self):
-        print("loading engine")
         with self.loading:
-            if self.matlab_engine:
+            if self.future_response:
                 return ...
 
-            self.matlab_engine = matlab.engine.start_matlab()
-            self.matlab_engine.cd(str(pathlib.Path(__file__).parent / "Scripts"))
-            print("loaded")
+            logging.info("Loading Engine...")
+            self.future_response = matlab.engine.start_matlab(background=True)  # started async
         return ...
+
+    @property
+    def engine(self):
+        if self.matlab_engine:
+            return self.matlab_engine
+
+        if not self.future_response:
+            self.load()
+
+        self.matlab_engine = self.future_response.result()
+        self.matlab_engine.cd(str(pathlib.Path(__file__).parent / "Scripts"))
+        self._engine_pid = self.matlab_engine.feature("GetPid")
+        return self.matlab_engine
 
     def stop_engine(self):
         self.matlab_engine.quit() if self.matlab_engine else ...
@@ -92,7 +106,7 @@ class Engine:
         # cot, co_po, weightage, expected = (matlab.double(_) for _ in parse_tables(4, workbook, sheets[0]))
         gc.collect()
 
-        self.matlab_engine.bridge(
+        self.engine.bridge(
             *(matlab.double(_) for _ in parse_tables(4, workbook, sheets[0])),
             *(matlab.double(_) for _ in parse_tables(2, workbook, *sheets[1:])),
             stdout=output,

@@ -18,4 +18,5 @@ get_cert.ps1
 test*.py
 CO_PO/assets/bootstrap.min.css
 *.ipynb
+venv
 *temp

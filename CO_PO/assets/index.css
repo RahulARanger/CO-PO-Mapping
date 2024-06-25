@@ -11,6 +11,7 @@
     -dark-black: #171010;
     --board: #333333;
     --standard-transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --selected: 1px solid rgba(0, 0, 0, 0.3);
 }
 
 
@@ -137,10 +138,11 @@ label.mantine-SegmentedControl-labelActive:hover, .custom-butt:hover{
     color: #fff;
     transition: var(--standard-transition);
     box-shadow: var(--hard-chocolate);
-    border:1px solid rgba(0, 0, 0, 0.3);
     display: flex;
     flex-flow: column;
     align-items: center;
+    padding: 0.5rem 0.69rem;
+    border: 3px solid var(--board);
 }
 
 .card:hover{
@@ -149,16 +151,30 @@ label.mantine-SegmentedControl-labelActive:hover, .custom-butt:hover{
     box-shadow: var(--clean);
 }
 
-.card > .card-footer, .card > .card-header{
+.__card_ends{
     background-color: var(--lil-black);
-    flex-grow: 1;
-    width: 100%;
+    text-align:center;
+    border: var(--selected);
     box-shadow: var(--clean);
-    border: 3px solid var(--board);
+}
+.__card_ends-footer{
+    box-shadow: var(--crystal-inset);
+    padding: 4px;
 }
 
 div.mantine-Divider-label{
     padding: 6px 0px;
+}
+
+div.mantine-Notification-root{
+    transition: var(--standard-transition);
+    border: var(--selected);
+    border-color: dodgerblue;
+    box-shadow: var(--bottom-lift);
+}
+div.mantine-Notification-root:hover{
+    border-color: var(--lil-black);
+    box-shadow: var(--hard-chocolate);
 }
 
 
