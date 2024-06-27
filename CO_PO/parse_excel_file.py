@@ -1,8 +1,6 @@
 import gc
 import logging
-import os
 import pathlib
-import typing
 import matlab.engine
 import matlab
 from openpyxl import load_workbook
@@ -17,7 +15,7 @@ def starting_table_number(table: Table):
     return coordinate_to_tuple(table.ref.split(":")[0])
 
 
-def parse_tables(tables_to_consider: int, workbook: Workbook, *sheets: typing.List[str]):
+def parse_tables(tables_to_consider: int, workbook: Workbook, *sheets: str):
     """
     Parse the tables in the workbook.
 
@@ -134,3 +132,10 @@ class Engine:
         with self.processing:
             return self.actual_parse(*args)
 
+#
+# if __name__ == "__main__":
+#     engine = Engine()
+#     engine.load()
+#     a, b = engine.actual_parse("Downloads\\OBE IES.xlsx", 3)
+#     print(a, b)
+#     engine.stop_engine()

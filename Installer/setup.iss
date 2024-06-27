@@ -1,4 +1,4 @@
-#define Version="0.4.5"
+#define Version="0.5.0"
 #define Name="CO-PO Mapping"
 #define Author="Tangellapalli Srinivas"
 #define Mx="CO-PO"
@@ -88,6 +88,7 @@ Source: "{tmp}\python.zip"; DestDir: "{app}"; flags: external skipifsourcedoesnt
 Source: "{tmp}\get-pip.py"; DestDir: "{app}"; flags: external skipifsourcedoesntexist; Permissions: users-modify;
 
 Source: "../CO_PO\assets\*"; DestDir: "{app}/CO_PO/assets";
+Source: "../CO_PO\Components\*"; DestDir: "{app}/CO_PO/Components";
 Source: "{tmp}\bootstrap.min.css"; DestDir: "{app}/CO_PO/assets"; flags: dontcopy external; Permissions: users-modify;
 
 Source: "./setup.ps1"; DestDir: "{app}"; Permissions: users-modify; Flags: deleteafterinstall;

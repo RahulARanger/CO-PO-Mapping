@@ -19,4 +19,5 @@ test*.py
 CO_PO/assets/bootstrap.min.css
 *.ipynb
 venv
+*.asv
 *temp

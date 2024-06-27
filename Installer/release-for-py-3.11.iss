@@ -1,0 +1,5 @@
+#define PY_ZIP="https://www.python.org/ftp/python/3.11.2/python-3.11.2-embed-amd64.zip"
+#define PY_PIP="https://bootstrap.pypa.io/get-pip.py"
+#define req = "requirements-3.8.txt"
+#define Output = "CO-PO.3.11"
+#include "setup.iss"
