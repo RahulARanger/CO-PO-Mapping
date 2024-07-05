@@ -104,7 +104,9 @@ class HeaderComponent(BaseApplication):
                 self.gen_tip(
                     dcc.Link(
                         dmc.Title(
-                            "CO-PO Mapping", order=3
+                            ["CO-PO Mapping", html.Sub(
+                                __version__.lower()
+                            )], order=3
                         ),
                         href=self.repo,
                         target='_blank',
@@ -115,39 +117,39 @@ class HeaderComponent(BaseApplication):
                     "bottom",
                     "start"
                 ), dmc.Group([
-                    self.gen_tip(
-                        dmc.ActionIcon(
-                            children="⚙", id=self._settings
-                        ),
-                        "Settings, You can clear cache, set auto-update, etc...",
-                        "bottom", "center"
-                    ),
-                    dmc.Menu(
-                        [
-                            dmc.MenuLabel("Help"),
-                            dmc.MenuItem("Docs", color="teal"),
-                            dmc.MenuItem("About", color="orange"),
-                            dmc.MenuItem("ChangeLog", color="orange"),
-                            dmc.Divider(),
-                            dmc.MenuItem("Sample Input", color="yellow", id=self._sample_input_dropdown),
-                            dmc.MenuItem("Sample Output", color="green", id=self._sample_output_dropdown)
-                        ], withArrow=True, size="md", shadow="lg", trigger="hover"
-                    ),
+                self.gen_tip(
                     dmc.ActionIcon(
-                        dmc.Image(
-                            src="assets/shutdown.svg"
-                        ), id=self._shutdown
+                        children="⚙", id=self._settings
                     ),
-                    dmc.Switch(
-                        label="Show Help",
-                        onLabel="Yes",
-                        offLabel="No",
-                        color="orange",
-                        size="sm",
-                        checked=False,
-                        id=self._ask_help
-                    )
-                ], align="center")]
+                    "Settings, You can clear cache, set auto-update, etc...",
+                    "bottom", "center"
+                ),
+                dmc.Menu(
+                    [
+                        dmc.MenuLabel("Help"),
+                        dmc.MenuItem("Docs", color="teal"),
+                        dmc.MenuItem("About", color="orange"),
+                        dmc.MenuItem("ChangeLog", color="orange"),
+                        dmc.Divider(),
+                        dmc.MenuItem("Sample Input", color="yellow", id=self._sample_input_dropdown),
+                        dmc.MenuItem("Sample Output", color="green", id=self._sample_output_dropdown)
+                    ], withArrow=True, size="md", shadow="lg", trigger="hover"
+                ),
+                dmc.ActionIcon(
+                    dmc.Image(
+                        src="assets/shutdown.svg"
+                    ), id=self._shutdown
+                ),
+                dmc.Switch(
+                    label="Show Help",
+                    onLabel="Yes",
+                    offLabel="No",
+                    color="orange",
+                    size="sm",
+                    checked=False,
+                    id=self._ask_help
+                )
+            ], align="center")]
             , position="apart", align="center"))
 
     def _settings_modal(self):

@@ -1,4 +1,4 @@
-#define Version="0.5.2"
+#define Version="0.5.3"
 #define Name="CO-PO Mapping"
 #define Author="Tangellapalli Srinivas"
 #define Mx="CO-PO"
